@@ -17,6 +17,7 @@
 package org.apache.camel.component.elasticsearch;
 
 import java.util.Collections;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.camel.Exchange;
@@ -230,7 +231,7 @@ public class ElasticsearchProducer extends DefaultProducer {
             }
         } else if (operation == ElasticsearchOperation.Search) {
             SearchRequest searchRequest = message.getBody(SearchRequest.class);
-            System.out.println(searchRequest.toString()); // ???
+            // xSystem.out.println(searchRequest.toString()); // ???
             if (searchRequest == null) {
                 throw new IllegalArgumentException("Wrong body type. Only Map, String or SearchRequest is allowed as a type");
             }
@@ -248,15 +249,18 @@ public class ElasticsearchProducer extends DefaultProducer {
                 // 修改代码 ???
                 SearchResponse resp = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
                 ObjectMapper mapper = new ObjectMapper();
-                // 方法1(结果包含额外的类型字段信息)
-                // {
-                //     message.setBody(mapper.readValue(mapper.writeValueAsString(resp), Map.class));
-                // }
-                // 方法2(与标准esrest接口返回数据一致)
+                // 方法1(结果包含额外的类型字段信息) ???
                 {
-                    // message.setBody(mapper.readValue(resp.toString(), Map.class));
-                    message.setBody(resp.toString());
+                    // 不需要unmarshal.json
+                    message.setBody(mapper.readValue(mapper.writeValueAsString(resp), Map.class));
                 }
+                // 方法2(与标准esrest接口返回数据一致) ???
+                // {
+                //     // 不需要unmarshal.json
+                //     // message.setBody(mapper.readValue(resp.toString(), Map.class));
+                //     // 需要unmarshal.json
+                //     message.setBody(resp.toString());
+                // }
             }
         } else if (operation == ElasticsearchOperation.MultiSearch) {
             MultiSearchRequest searchRequest = message.getBody(MultiSearchRequest.class);
