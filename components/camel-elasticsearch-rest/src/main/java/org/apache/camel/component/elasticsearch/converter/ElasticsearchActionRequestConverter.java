@@ -43,7 +43,6 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchModule;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
