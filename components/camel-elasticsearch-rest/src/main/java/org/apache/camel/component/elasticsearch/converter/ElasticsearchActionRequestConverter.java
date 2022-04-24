@@ -17,11 +17,10 @@
 package org.apache.camel.component.elasticsearch.converter;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.camel.Converter;
 import org.apache.camel.Exchange;
 import org.apache.camel.component.elasticsearch.ElasticsearchConstants;
@@ -34,11 +33,17 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.Strings;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.DeprecationHandler;
+import org.elasticsearch.common.xcontent.NamedXContentRegistry;
+import org.elasticsearch.common.xcontent.XContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchModule;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -201,12 +206,26 @@ public final class ElasticsearchActionRequestConverter {
             }
         } else if (queryObject instanceof String) {
             queryText = (String) queryObject;
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode jsonTextObject = mapper.readValue(queryText, JsonNode.class);
-            JsonNode parentJsonNode = jsonTextObject.get(ES_QUERY_DSL_PREFIX);
-            if (parentJsonNode != null) {
-                queryText = parentJsonNode.toString();
-            }
+            // 原先代码 ???
+            // ObjectMapper mapper = new ObjectMapper();
+            // JsonNode jsonTextObject = mapper.readValue(queryText, JsonNode.class);
+            // JsonNode parentJsonNode = jsonTextObject.get(ES_QUERY_DSL_PREFIX);
+            // if (parentJsonNode != null) {
+            //     queryText = parentJsonNode.toString();
+            // }
+            // 修改代码 ???
+            SearchModule searchModule = new SearchModule(Settings.EMPTY, false, Collections.emptyList());
+            NamedXContentRegistry registry = new NamedXContentRegistry(searchModule.getNamedXContents());
+            XContent content = XContentType.JSON.xContent();
+            searchSourceBuilder.parseXContent(content.createParser(registry,
+                    DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
+                    queryText));
+            // 使用NamedXContentRegistry.EMPTY导致异常 ???
+            // searchSourceBuilder.parseXContent(content.createParser(NamedXContentRegistry.EMPTY,
+            //                                                        DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
+            //                                                        queryText));
+            searchRequest.source(searchSourceBuilder);
+            return searchRequest;
         } else {
             // Cannot convert the queryObject into SearchRequest
             LOG.info("Cannot convert queryObject into SearchRequest object");

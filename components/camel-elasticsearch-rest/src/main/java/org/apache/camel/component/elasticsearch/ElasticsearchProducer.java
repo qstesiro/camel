@@ -18,6 +18,7 @@ package org.apache.camel.component.elasticsearch;
 
 import java.util.Collections;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.support.DefaultProducer;
@@ -36,6 +37,7 @@ import org.elasticsearch.action.get.MultiGetRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.MultiSearchRequest;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
@@ -228,6 +230,7 @@ public class ElasticsearchProducer extends DefaultProducer {
             }
         } else if (operation == ElasticsearchOperation.Search) {
             SearchRequest searchRequest = message.getBody(SearchRequest.class);
+            System.out.println(searchRequest.toString()); // ???
             if (searchRequest == null) {
                 throw new IllegalArgumentException("Wrong body type. Only Map, String or SearchRequest is allowed as a type");
             }
@@ -240,7 +243,20 @@ public class ElasticsearchProducer extends DefaultProducer {
                         searchRequest, restHighLevelClient, scrollKeepAliveMs, exchange);
                 exchange.getIn().setBody(scrollRequestIterator);
             } else {
-                message.setBody(restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT).getHits());
+                // 原先代码
+                // message.setBody(restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT).getHits());
+                // 修改代码 ???
+                SearchResponse resp = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
+                ObjectMapper mapper = new ObjectMapper();
+                // 方法1(结果包含额外的类型字段信息)
+                // {
+                //     message.setBody(mapper.readValue(mapper.writeValueAsString(resp), Map.class));
+                // }
+                // 方法2(与标准esrest接口返回数据一致)
+                {
+                    // message.setBody(mapper.readValue(resp.toString(), Map.class));
+                    message.setBody(resp.toString());
+                }
             }
         } else if (operation == ElasticsearchOperation.MultiSearch) {
             MultiSearchRequest searchRequest = message.getBody(MultiSearchRequest.class);
