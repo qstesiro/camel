@@ -250,17 +250,25 @@ public class ElasticsearchProducer extends DefaultProducer {
                 SearchResponse resp = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
                 ObjectMapper mapper = new ObjectMapper();
                 // 方法1(结果包含额外的类型字段信息) ???
-                {
-                    // 不需要unmarshal.json
-                    message.setBody(mapper.readValue(mapper.writeValueAsString(resp), Map.class));
-                }
-                // 方法2(与标准esrest接口返回数据一致) ???
+                // 注: 查询有sugAggs时报异常
                 // {
                 //     // 不需要unmarshal.json
-                //     // message.setBody(mapper.readValue(resp.toString(), Map.class));
-                //     // 需要unmarshal.json
-                //     message.setBody(resp.toString());
+                //     Map map = mapper.readValue(mapper.writeValueAsString(resp), Map.class);
+                //     if (resp.getAggregations() != null) {
+                //         // 对聚合作个的修正
+                //         String s = mapper.writeValueAsString(resp.getAggregations().asMap());
+                //         map.put("aggregations", mapper.readValue(s, Map.class));
+                //     }
+                //     message.setBody(map);
                 // }
+                // 方法2(结果标准与esrest接口返回数据不一致) ???
+                {
+                    // 不需要unmarshal.json
+                    Map map = mapper.readValue(resp.toString(), Map.class);
+                    message.setBody(map);
+                    // 需要unmarshal.json
+                    // message.setBody(resp.toString());
+                }
             }
         } else if (operation == ElasticsearchOperation.MultiSearch) {
             MultiSearchRequest searchRequest = message.getBody(MultiSearchRequest.class);
